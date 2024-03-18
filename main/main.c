@@ -15,6 +15,9 @@
 #include "Input/Input.h"
 #include "Output/Output.h"
 #include "esp_timer.h"
+#include "ssd1306.h"
+#include <sys/dirent.h>
+#include <string.h>
 
 static const char *TAG = "boot";
 
@@ -94,6 +97,10 @@ void play(i2s_chan_handle_t * handle, WAVFILEREADER* reader, const char *fname)
 
 void app_main(void)
 {
+    SSD1306_t oled;
+    int center, top, bottom;
+    char lineChar[20];
+
     wav_header_t header;
     init_header(&header);
 
@@ -114,6 +121,53 @@ void app_main(void)
     WAVFILEREADER reader;
     reader.m_wav_header = header;
 
+    DIR* dir = opendir("/sdcard");
+    if (!dir) {
+        ESP_LOGE(TAG, "Failed to open directory.");
+        return;
+    }
+
+    // Read directory entries
+    struct dirent* entry;
+    int sum_files = 0;
+    int max_length = 0;
+
+    while ((entry = readdir(dir)) != NULL) {
+        sum_files++;
+        //ESP_LOGI(TAG, "%s", entry->d_name);
+        int i = 0;
+        while (entry->d_name[i] !='\0') {
+            i++;
+        }
+        if (max_length < i) 
+        {
+            max_length = i;
+        }
+    }
+
+    closedir(dir);
+    char file_names[sum_files][20];
+    dir = opendir("/sdcard");
+    int pom = 0;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+        //ESP_LOGI(TAG, "%s", entry->d_name);
+        strcpy(file_names[pom], entry->d_name);
+        pom++;
+        
+        
+    }
+    closedir(dir);
+    ESP_LOGI(TAG, "Pocet suborov na sd karte: %d", sum_files);
+    for (int i = 0; i < sum_files; i++)
+    {
+        ESP_LOGI(TAG, "%s", file_names[i]);
+    }
+
+        
+        
     while (true) 
     {
         wait_for_button_push();
