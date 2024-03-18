@@ -21,6 +21,7 @@ void WAVFileReader(WAVFILEREADER * reader, FILE *fp)
     ESP_LOGI(TAG, "fmt_chunk_size=%d, audio_format=%d, num_channels=%d, sample_rate=%d, sample_alignment=%d, bit_depth=%d, data_bytes=%d\n",
              reader->m_wav_header.fmt_chunk_size, reader->m_wav_header.audio_format, reader->m_wav_header.num_channels, 
              reader->m_wav_header.sample_rate, reader->m_wav_header.sample_alignment, reader->m_wav_header.bit_depth,reader-> m_wav_header.data_bytes);
+
 }
 
 

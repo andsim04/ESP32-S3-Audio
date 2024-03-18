@@ -19,6 +19,12 @@
         "gpio.h": "c",
         "i2s_std.h": "c",
         "i2s_reg.h": "c",
-        "esp_lcd_panel_io.h": "c"
-    }
+        "esp_lcd_panel_io.h": "c",
+        "input.h": "c",
+        "stdio.h": "c",
+        "wavfilereader.h": "c",
+        "task.h": "c",
+        "freertos.h": "c"
+    },
+    "idf.flashType": "UART"
 }

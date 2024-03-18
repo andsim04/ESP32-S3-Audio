@@ -1,6 +1,7 @@
 #include "Output.h"
 
-i2s_chan_handle_t* i2s_out_init() 
+
+i2s_chan_handle_t i2s_out_init() 
 {
     
     i2s_chan_handle_t handle;    
@@ -8,7 +9,7 @@ i2s_chan_handle_t* i2s_out_init()
     i2s_new_channel(&chan_cfg, &handle, NULL);
 
     i2s_std_config_t std_cfg = {
-    .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(44100),
+    .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(40000),
     .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_MONO),
     .gpio_cfg = {
         .mclk = I2S_GPIO_UNUSED,
@@ -27,7 +28,7 @@ i2s_chan_handle_t* i2s_out_init()
     
 
     i2s_channel_init_std_mode(handle, &std_cfg);
-    return &handle;
+    return handle;
 }
 
 void start_ou(i2s_chan_handle_t* handle)
@@ -42,12 +43,12 @@ void stop_ou(i2s_chan_handle_t* handle)
 
 void write_ou(i2s_chan_handle_t* handle, int16_t* samples, int count) 
 {
-    int16_t *frames = (int16_t *)malloc(2 * sizeof(int16_t) * NUM_FRAMES_TO_SEND);
+    int16_t *frames = (int16_t *)malloc(2 * sizeof(int16_t) *  FRAMES);
     int sample_index = 0;
      while (sample_index < count)
     {
         int samples_to_send = 0;
-        for (int i = 0; i < NUM_FRAMES_TO_SEND && sample_index < count; i++)
+        for (int i = 0; i <  FRAMES && sample_index < count; i++)
         {
             int sample = process_sample(samples[sample_index]);
             frames[i * 2] = sample;
@@ -60,8 +61,12 @@ void write_ou(i2s_chan_handle_t* handle, int16_t* samples, int count)
         i2s_channel_write(*handle, frames, samples_to_send * sizeof(int16_t) * 2, &bytes_written, portMAX_DELAY);
         if (bytes_written != samples_to_send * sizeof(int16_t) * 2)
         {
-            ESP_LOGE(TAG, "Did not write all bytes");
+            ESP_LOGE(TAG_OUT, "Did not write all bytes");
         }
     }
   free(frames);
+}
+
+int16_t process_sample(int16_t sample) {
+  return sample;
 }

@@ -9,7 +9,6 @@ void WAVFileWriter_init(WAVFILEWRITER * writer, FILE *fp, int sample_rate)
 {
      writer->m_fp = fp;
      writer->m_header.sample_rate = sample_rate;
-    // write out the header - we'll fill in some of the blanks later
      fwrite(&writer->m_header, sizeof(wav_header_t), 1, writer->m_fp);
      writer->m_file_size = sizeof(wav_header_t);
 }

@@ -1,2 +1,3 @@
-idf_component_register(SRCS "i2c_oled_example_main.c" "lvgl_demo_ui.c"
-                       INCLUDE_DIRS ".")
+idf_component_register(SRCS "main.c" "Input/Input.c" "SDCard/SDCard.c" "Output/Output.c" "WAV/WAVFileReader.c" "WAV/WAVFileWriter.c" "WAV/WAVFile.c"
+                            ""
+                    INCLUDE_DIRS ".")
