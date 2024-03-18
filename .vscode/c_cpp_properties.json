@@ -11,7 +11,12 @@
                 "${config:idf.espAdfPathWin}/components/**",
                 "${workspaceFolder}/**",
                 "C:/Users/andre/esp/v5.2.1/esp-idf/components/driver/i2s/include",
-                "C:/Users/andre/esp/v5.2.1/esp-idf/components/hal/include"
+                "C:/Users/andre/esp/v5.2.1/esp-idf/components/hal/include",
+                "C:/Users/andre/esp/v5.2.1/esp-idf/components/esp_common/include",
+                "C:/Users/andre/esp/v5.2.1/esp-idf/components/soc/esp32s3/include",
+                "C:/Users/andre/esp/v5.2.1/esp-idf/components/freertos/FreeRTOS-Kernel/include",
+                "C:/Users/andre/esp/v5.2.1/esp-idf/components/freertos/config/include/freertos",
+                "C:/Users/andre/esp/v5.2.1/esp-idf/components/driver/sdmmc/include"
             ],
             "browse": {
                 "path": [
