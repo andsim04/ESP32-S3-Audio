@@ -209,13 +209,15 @@ void posun_menu(void* thr_data)
                     {
                         break;
                     }
-                    if (data->zvolene == data->index_menu) {
-                    invert = true;
+                    if (data->zvolene + 1 == data->index_menu) {
+                        data->zvolene = data->index_menu;
+                        invert = true;
                     }
                     ssd1306_clear_line(data->oled, data->pozicia + i, false);
                     ssd1306_display_text(data->oled, data->pozicia + i, data->hlavne_menu[data->index_menu + i], strlen(data->hlavne_menu[data->index_menu + i]), invert);
                     data->index_menu += 1;
                     data->pozicia += 1; 
+                    
 		            vTaskDelay(500 / portTICK_PERIOD_MS);
                     //TODO: dorobit ak by bolo viac ako 4 moznosti v menu
                 }
@@ -226,24 +228,28 @@ void posun_menu(void* thr_data)
                 data->start = true;
                 bool jano = false;
                 for (int i = 0; i < 2; i++)
-            {
-                 if(!jano) {
-                    invert = true;
-                    jano = true;
+                {
+                    if(!jano) {
+                        invert = true;
+                        jano = true;
+                        data->zvolene = data->index_menu;
+                    } else {
+                        invert = false;    
+                    }
+                
+                    ssd1306_clear_line(data->oled, data->pozicia + i, false);
+                    ssd1306_display_text(data->oled, data->pozicia + i, data->hlavne_menu[data->index_menu+ i], strlen(data->hlavne_menu[data->index_menu + i]), invert);
+                    
                 }
-                
-                ssd1306_clear_line(data->oled, data->pozicia + i, false);
-                ssd1306_display_text(data->oled, data->pozicia + i, data->hlavne_menu[data->index_menu+ i], strlen(data->hlavne_menu[data->index_menu + i]), invert);
-                
-                
-            }
             }
         } else {
+            ESP_LOGI(TAG, "Start");
             bool jano = false;
             for (int i = 0; i < 2; i++)
             {
                 if(jano) {
                     invert = true;
+                    data->zvolene = data->index_menu;
                 } else {
                     jano = true;
                 }
@@ -251,7 +257,6 @@ void posun_menu(void* thr_data)
                 ssd1306_display_text(data->oled, data->pozicia + i, data->hlavne_menu[data->index_menu], strlen(data->hlavne_menu[data->index_menu]), invert);
                 
                 ++data->index_menu;
-                data->zvolene = data->index_menu;
             }
             
             
@@ -289,10 +294,11 @@ void menu(MENU_DATA* thr_data)
         // {
         //     pthread_cond_wait(data->bolo_stlacene, data->menu_mutex);
         // }
-        ESP_LOGI(TAG, "dosiel po stlacenie");
+       
         wait_for_button_push(data);
-        ESP_LOGI(TAG, "stlacil2");
+       
         posun_menu(data);
+         ESP_LOGI(TAG, "Zvolene: %d", data->zvolene);
                 //ak bol posun
         //ssd1306_display_text(data->oled, ++data->pozicia, hlavne_menu[++index_menu], 6, false);
 
