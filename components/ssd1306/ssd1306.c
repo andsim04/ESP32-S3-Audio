@@ -111,6 +111,8 @@ void ssd1306_display_text(SSD1306_t * dev, int page, char * text, int text_len, 
 	}
 }
 
+
+
 // by Coert Vonk
 void 
 ssd1306_display_text_x3(SSD1306_t * dev, int page, char * text, int text_len, bool invert)

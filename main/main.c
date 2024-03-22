@@ -18,24 +18,69 @@
 #include "ssd1306.h"
 #include <sys/dirent.h>
 #include <string.h>
+#include "esp_pthread.h"
+#include "pthread.h"
 
 static const char *TAG = "boot";
 
 #define USR_BTN_1 GPIO_NUM_14
+#define USR_BTN_2 GPIO_NUM_47
 
+#define VELKOST_MENU 3
 // sdcard
 #define PIN_NUM_MISO GPIO_NUM_13
 #define PIN_NUM_CLK GPIO_NUM_12
 #define PIN_NUM_MOSI GPIO_NUM_11
 #define PIN_NUM_CS GPIO_NUM_10
 
+typedef struct menu_data {
+    // pthread_mutex_t menu_mutex;
+    // pthread_cond_t posun;
+    // pthread_cond_t potvrdenie;
+    int pozicia;
+    bool potvrdenie_tl;
+    bool posun_tl;
+    SSD1306_t * oled;
+    int velkost_menu;
+    int index_menu;
+    char hlavne_menu[VELKOST_MENU][10];
+    int zvolene;
+    bool start;
 
-void wait_for_button_push()
+} MENU_DATA;
+
+void wait_for_button_push(void* thr_data)
 {
-    while(gpio_get_level(USR_BTN_1) == 1) 
-    {
-        vTaskDelay(20);
+    MENU_DATA *data = (MENU_DATA *) thr_data;
+
+    
+        while(gpio_get_level(USR_BTN_1) == 1) 
+        {
+            if (gpio_get_level(USR_BTN_1) == 0)
+            {
+                //pthread_cond_signal(data->posun);
+                data->posun_tl = true;
+                //data->index_menu++;
+                ESP_LOGI(TAG, "Stlacil");
+            }
+            
+            vTaskDelay(20);
+        }
     }
+
+void concatenate_string(char* s, char* s1)
+{
+    int i;
+ 
+    int j = strlen(s);
+ 
+    for (i = 0; s1[i] != '\0'; i++) {
+        s[i + j] = s1[i];
+    }
+ 
+    s[i + j] = '\0';
+ 
+    return;
 }
 
 void record(i2s_chan_handle_t * handle, WAVFILEWRITER* writer, const char *fname) 
@@ -93,34 +138,8 @@ void play(i2s_chan_handle_t * handle, WAVFILEREADER* reader, const char *fname)
 }
 
 
-
-
-void app_main(void)
+void vypis_nahravok() 
 {
-    SSD1306_t oled;
-    int center, top, bottom;
-    char lineChar[20];
-
-    wav_header_t header;
-    init_header(&header);
-
-    SDCARD card;
-    ESP_LOGI(TAG, "Starting up");
-    ESP_LOGI(TAG, "Mounting SDCard on /sdcard");
-    SdCard_init(&card, "/sdcard", PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK, PIN_NUM_CS);
-
-    i2s_chan_handle_t input_handle = i2s_in_init();
-    i2s_chan_handle_t output_handle = i2s_out_init();
-
-    gpio_pullup_en(USR_BTN_1);
-    gpio_set_direction(USR_BTN_1, GPIO_MODE_DEF_INPUT);
-
-    WAVFILEWRITER writer;
-    writer.m_header = header;
-
-    WAVFILEREADER reader;
-    reader.m_wav_header = header;
-
     DIR* dir = opendir("/sdcard");
     if (!dir) {
         ESP_LOGE(TAG, "Failed to open directory.");
@@ -165,18 +184,200 @@ void app_main(void)
     {
         ESP_LOGI(TAG, "%s", file_names[i]);
     }
+}
+
+void posun_menu(void* thr_data) 
+{
+
+    MENU_DATA *data = (MENU_DATA *) thr_data;
+        bool invert = false;
+        int pocet_riadkov = 0;
+        if (data->index_menu > 1) {
+            
+            data->pozicia = 2;
+            if (data->velkost_menu > data->index_menu) {
+                if ((data->velkost_menu - data->index_menu) > 1) {
+                        pocet_riadkov = 2;
+                } else {
+                    pocet_riadkov = data->velkost_menu - data->index_menu;
+                    ssd1306_clear_line(data->oled, data->pozicia, false);
+                    ssd1306_clear_line(data->oled, data->pozicia + 1, false);
+                }
+                for (int i = 0; i < pocet_riadkov; i++) 
+                {
+                    if (data->pozicia >= 4) 
+                    {
+                        break;
+                    }
+                    if (data->zvolene == data->index_menu) {
+                    invert = true;
+                    }
+                    ssd1306_clear_line(data->oled, data->pozicia + i, false);
+                    ssd1306_display_text(data->oled, data->pozicia + i, data->hlavne_menu[data->index_menu + i], strlen(data->hlavne_menu[data->index_menu + i]), invert);
+                    data->index_menu += 1;
+                    data->pozicia += 1; 
+		            vTaskDelay(500 / portTICK_PERIOD_MS);
+                    //TODO: dorobit ak by bolo viac ako 4 moznosti v menu
+                }
+            } else {
+                data->pozicia = 2;
+                data->index_menu = 0;
+                data->zvolene = 0;
+                data->start = true;
+                bool jano = false;
+                for (int i = 0; i < 2; i++)
+            {
+                 if(!jano) {
+                    invert = true;
+                    jano = true;
+                }
+                
+                ssd1306_clear_line(data->oled, data->pozicia + i, false);
+                ssd1306_display_text(data->oled, data->pozicia + i, data->hlavne_menu[data->index_menu+ i], strlen(data->hlavne_menu[data->index_menu + i]), invert);
+                
+                
+            }
+            }
+        } else {
+            bool jano = false;
+            for (int i = 0; i < 2; i++)
+            {
+                if(jano) {
+                    invert = true;
+                } else {
+                    jano = true;
+                }
+                ssd1306_clear_line(data->oled, data->pozicia + i, false);
+                ssd1306_display_text(data->oled, data->pozicia + i, data->hlavne_menu[data->index_menu], strlen(data->hlavne_menu[data->index_menu]), invert);
+                
+                ++data->index_menu;
+                data->zvolene = data->index_menu;
+            }
+            
+            
+        }
+    }
+
+
+
+
+void menu(MENU_DATA* thr_data) 
+{
+    MENU_DATA *data = (MENU_DATA *) thr_data;
+    int center, top, bottom;
+    top = 1;
+	center = 1;
+	bottom = 4;
+    
+    
+    //pthread_mutex_lock(data->menu_mutex);
+    char lineChar[20];
+    
+    
+    ssd1306_clear_screen(data->oled, false);
+    ssd1306_display_text(data->oled, 0, "ESP32-S3-Audio", 15, false);
+    ssd1306_display_text(data->oled, 1, "--------------", 15, false);
+
+    ssd1306_display_text(data->oled, 2, data->hlavne_menu[data->index_menu], strlen(data->hlavne_menu[data->index_menu]), true);
+    ssd1306_display_text(data->oled, 3, data->hlavne_menu[data->index_menu + 1], strlen(data->hlavne_menu[data->index_menu + 1]), false);
+    data->pozicia = 2;
+    //pthread_mutex_unlock(data->menu_mutex);
+        
+    while (true)
+    {
+        // while (!data->bolo_stlacene)
+        // {
+        //     pthread_cond_wait(data->bolo_stlacene, data->menu_mutex);
+        // }
+        ESP_LOGI(TAG, "dosiel po stlacenie");
+        wait_for_button_push(data);
+        ESP_LOGI(TAG, "stlacil2");
+        posun_menu(data);
+                //ak bol posun
+        //ssd1306_display_text(data->oled, ++data->pozicia, hlavne_menu[++index_menu], 6, false);
+
+        
+
+        // vTaskDelay(1000/portTICK_PERIOD_MS);
+        // ssd1306_software_scroll(data->oled, 2, (data->oled->_pages-1) );
+        // for (int line=0;line<bottom+10;line++) {
+	    // if ( (line % (data->oled->_pages-1)) == 0) ssd1306_scroll_clear(data->oled);
+		// ssd1306_scroll_text(data->oled, hlavne_menu[2], strlen(hlavne_menu[2]), false);
+		vTaskDelay(500 / portTICK_PERIOD_MS);
+	}
+        
+        
+        
+}
+    
+  
+    
+
+
+
+
+
+void app_main(void)
+{
+    SSD1306_t oled;
+    ESP_LOGI(TAG, "INTERFACE is i2c");
+	ESP_LOGI(TAG, "CONFIG_SDA_GPIO=%d",CONFIG_SDA_GPIO);
+	ESP_LOGI(TAG, "CONFIG_SCL_GPIO=%d",CONFIG_SCL_GPIO);
+	ESP_LOGI(TAG, "CONFIG_RESET_GPIO=%d",CONFIG_RESET_GPIO);
+	i2c_master_init(&oled, CONFIG_SDA_GPIO, CONFIG_SCL_GPIO, CONFIG_RESET_GPIO);
+    ESP_LOGI(TAG, "Panel is 128x32");
+	ssd1306_init(&oled, 128, 32);
+    int center, top, bottom;
+    char lineChar[20];
+
+    wav_header_t header;
+    init_header(&header);
+
+    SDCARD card;
+    ESP_LOGI(TAG, "Starting up");
+    ESP_LOGI(TAG, "Mounting SDCard on /sdcard");
+    SdCard_init(&card, "/sdcard", PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK, PIN_NUM_CS);
+
+    i2s_chan_handle_t input_handle = i2s_in_init();
+    i2s_chan_handle_t output_handle = i2s_out_init();
+
+    gpio_pullup_en(USR_BTN_1);
+    gpio_set_direction(USR_BTN_1, GPIO_MODE_DEF_INPUT);
+     gpio_pullup_en(USR_BTN_2);
+    gpio_set_direction(USR_BTN_2, GPIO_MODE_DEF_INPUT);
+
+    WAVFILEWRITER writer;
+    writer.m_header = header;
+
+    WAVFILEREADER reader;
+    reader.m_wav_header = header;
+    
+
+    MENU_DATA menu_data =  {
+        .hlavne_menu = {"Prehrat\0", "Nahrat\0", "Wifi\0"},
+        .index_menu = 0,
+        .oled = &oled,
+        .posun_tl = false,
+        .potvrdenie_tl = false,
+        .pozicia = 0,
+        .velkost_menu = 3,
+        .zvolene = 0,
+        .start= true
+    };
+    
 
         
         
     while (true) 
     {
-        wait_for_button_push();
-        record(&input_handle, &writer, "/sdcard/test.wav");
-        wait_for_button_push();
-        play(&output_handle, &reader,"/sdcard/test.wav" );
-
+        // wait_for_button_push();
+        // record(&input_handle, &writer, "/sdcard/test.wav");
+        // wait_for_button_push();
+        // play(&output_handle, &reader,"/sdcard/test.wav" );
+        menu(&menu_data);
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
+   
 
     
 }

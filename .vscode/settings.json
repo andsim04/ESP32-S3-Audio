@@ -24,7 +24,8 @@
         "stdio.h": "c",
         "wavfilereader.h": "c",
         "task.h": "c",
-        "freertos.h": "c"
+        "freertos.h": "c",
+        "esp_pthread.h": "c"
     },
     "idf.flashType": "UART"
 }
