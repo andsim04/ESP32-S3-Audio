@@ -39,27 +39,43 @@ typedef struct menu_data {
     int velkost_menu;
     int index_menu;
     char menu_vyber[VELKOST_MENU][10];
+    char ** nahravky;
     int zvolene;
     bool start;
+    i2s_chan_handle_t * handle_in;
+    i2s_chan_handle_t * handle_ou;
+    WAVFILEWRITER * writer;
+    WAVFILEREADER * reader;
+    char* kategoria;
+    
 } MENU_DATA;
 
-void wait_for_button_push(void* thr_data)
+bool wait_for_button_push()
 {
-    MENU_DATA *data = (MENU_DATA *) thr_data;
-
-    
-        while(gpio_get_level(USR_BTN_1) == 1) 
+   
+        while(gpio_get_level(USR_BTN_2) == 1 && gpio_get_level(USR_BTN_1) == 1) 
         {
-            if (gpio_get_level(USR_BTN_1) == 0)
-            {
-                //pthread_cond_signal(data->posun);
-                
-                //data->index_menu++;
-                ESP_LOGI(TAG, "Stlacil");
-            }
             
             vTaskDelay(20);
         }
+
+        if (gpio_get_level(USR_BTN_1) == 0)
+            {
+                ESP_LOGI(TAG, "Stlacil 3");
+                return true;
+            } else {
+                ESP_LOGI(TAG, "Stlacil 4");
+                return false;
+            }
+        return false;
+        //  if (gpio_get_level(USR_BTN_1) == 0)
+        //     {
+        //         ESP_LOGI(TAG, "Stlacil 3");
+        //         return true;
+        //     } else {
+        //         ESP_LOGI(TAG, "Stlacil 4");
+        //         return false;
+         
     }
 
 void concatenate_string(char* s, char* s1)
@@ -132,9 +148,9 @@ void play(i2s_chan_handle_t * handle, WAVFILEREADER* reader, const char *fname)
 }
 
 
-void vypis_nahravok() 
+void vypis_nahravok(MENU_DATA * data) 
 {
-    DIR* dir = opendir("/sdcard");
+    DIR* dir = opendir("/sdcard/nahravky");
     if (!dir) {
         ESP_LOGE(TAG, "Failed to open directory.");
         return;
@@ -143,7 +159,6 @@ void vypis_nahravok()
     // Read directory entries
     struct dirent* entry;
     int sum_files = 0;
-    int max_length = 0;
 
     while ((entry = readdir(dir)) != NULL) {
         sum_files++;
@@ -152,30 +167,45 @@ void vypis_nahravok()
         while (entry->d_name[i] !='\0') {
             i++;
         }
-        if (max_length < i) 
-        {
-            max_length = i;
-        }
+        
     }
 
     closedir(dir);
-    char file_names[sum_files][20];
-    dir = opendir("/sdcard");
+    char file_names[sum_files][16];
+    dir = opendir("/sdcard/nahravky");
     int pom = 0;
     while ((entry = readdir(dir)) != NULL) {
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
             continue;
         }
-        //ESP_LOGI(TAG, "%s", entry->d_name);
         strcpy(file_names[pom], entry->d_name);
         pom++;
         
         
     }
     closedir(dir);
-    ESP_LOGI(TAG, "Pocet suborov na sd karte: %d", sum_files);
-    for (int i = 0; i < sum_files; i++)
+
+    data->nahravky = (char**)malloc((sum_files + 1) * sizeof(char*));
+    for (int i = 0; i < sum_files + 1; i++)
     {
+        data->nahravky[i] = (char*)malloc(16 * sizeof(char));
+    }
+    
+    strcpy(data->nahravky[0], "naspat\0");
+    for (int i = 1; i < sum_files + 1; i++)
+    {
+       strcpy(data->nahravky[i], file_names[i - 1]);   
+    }
+    
+    data->velkost_menu = sum_files + 1;
+
+   
+    
+
+    ESP_LOGI(TAG, "Pocet suborov na sd karte: %d", sum_files);
+    for (int i = 0; i < sum_files + 1; i++)
+    {
+        ESP_LOGI(TAG, "%s", data->nahravky[i]);
         ESP_LOGI(TAG, "%s", file_names[i]);
     }
 }
@@ -183,52 +213,96 @@ void vypis_nahravok()
 void posun_menu(MENU_DATA * data) 
 {
     
-        bool invert;
-        int pocet_riadkov;
-        if ((data->velkost_menu - data->index_menu) > 1) {
-            pocet_riadkov = 2;
-        }
-        else if ((data->velkost_menu - data->index_menu) <= 0) {
-            data->index_menu = 0;
-            data->start = true;
-            pocet_riadkov = 2;
-        } else {
-            pocet_riadkov = 1;
-        }
-        
-        
-
-        if (data->start) 
-        {
-            
-            data->start = false;
-            data->zvolene = 0;
-            
-
-        } else {
-            data->zvolene++;
-        }
-
-        
-
-        ssd1306_clear_line(data->oled, data->pozicia, false);
-        ssd1306_clear_line(data->oled, data->pozicia + 1, false);
-
-        for (int i = 0; i < pocet_riadkov; i++)
-        {
-           if ((i % 2) == 0) {
-            invert = true;
-           } else {
-            invert = false;
-           }
-           ssd1306_display_text(data->oled, data->pozicia + i, data->menu_vyber[data->index_menu + i], strlen(data->menu_vyber[data->index_menu + i]), invert);
-            
-        }
-        
-        data->index_menu++;
-    
-
+    bool invert;
+    int pocet_riadkov;
+    if ((data->velkost_menu - data->index_menu) > 1) {
+        pocet_riadkov = 2;
     }
+    else if ((data->velkost_menu - data->index_menu) <= 0) {
+        data->index_menu = 0;
+        data->start = true;
+        pocet_riadkov = 2;
+    } else {
+        pocet_riadkov = 1;
+    }
+        
+        
+
+    if (data->start) 
+    {
+            
+        data->start = false;
+        data->zvolene = 0;
+            
+
+    } else {
+        data->zvolene++;
+    }
+
+        
+
+    ssd1306_clear_line(data->oled, data->pozicia, false);
+    ssd1306_clear_line(data->oled, data->pozicia + 1, false);
+
+    for (int i = 0; i < pocet_riadkov; i++)
+    {
+        if ((i % 2) == 0) {
+            invert = true;
+        } else {
+            invert = false;
+        }
+        if (strcmp(data->kategoria, "hlavne") == 0) { //zatial dve ak bude treba da sa rozsirit
+            ssd1306_display_text(data->oled, data->pozicia + i, data->menu_vyber[data->index_menu + i], strlen(data->menu_vyber[data->index_menu + i]), invert);
+        } else {
+            ssd1306_display_text(data->oled, data->pozicia + i, data->nahravky[data->index_menu + i],strlen(data->nahravky[data->index_menu + i]) , invert);
+        }
+    }
+    
+        
+    data->index_menu++;
+}
+
+void potvrdenie_menu(MENU_DATA* data) {
+
+    if (strcmp(data->kategoria, "hlavne") == 0) {
+
+    
+        switch (data->zvolene)
+        {
+        case 0:
+            data->kategoria = "prehrat";
+            data->zvolene = 0;
+            data->index_menu = 0;
+            vypis_nahravok(data);
+            data->start = true;
+            posun_menu(data);
+            break;
+        case 1:
+            record(data->handle_in, data->writer, "test"); // dorobit play
+            break;
+        case 2:
+
+            break;
+        default:
+            break;
+        }
+    } else {
+        if (data->zvolene == 0) {
+            data->kategoria = "hlavne";
+            data->index_menu = 0;
+            free(data->nahravky);
+            data->velkost_menu = VELKOST_MENU;
+            posun_menu(data); 
+            
+        } else {
+            ;
+            char* cesta = "/sdcard/nahravky/";
+            concatenate_string(cesta, data->nahravky[data->zvolene]);
+            play(data->handle_ou, data->reader, cesta);
+        }
+    }
+
+}
 
 
 
@@ -259,9 +333,14 @@ void menu(MENU_DATA* thr_data)
         
     while (true)
     {
-        wait_for_button_push(data);
-        posun_menu(data);
-        ESP_LOGI(TAG, "Zvolene: %d", data->zvolene);
+        if (wait_for_button_push()) {
+            posun_menu(data);
+        } else {
+            potvrdenie_menu(data);
+        }
+        
+      
+        
         
 		vTaskDelay(200/ portTICK_PERIOD_MS);
 	}
@@ -303,7 +382,7 @@ void app_main(void)
 
     gpio_pullup_en(USR_BTN_1);
     gpio_set_direction(USR_BTN_1, GPIO_MODE_DEF_INPUT);
-     gpio_pullup_en(USR_BTN_2);
+    gpio_pullup_en(USR_BTN_2);
     gpio_set_direction(USR_BTN_2, GPIO_MODE_DEF_INPUT);
 
     WAVFILEWRITER writer;
@@ -312,7 +391,7 @@ void app_main(void)
     WAVFILEREADER reader;
     reader.m_wav_header = header;
     
-
+    char * kategoria = "hlavne";
     MENU_DATA menu_data =  {
         .menu_vyber = {"Prehrat\0", "Nahrat\0", "Wifi\0"},
         .index_menu = 0,
@@ -320,7 +399,12 @@ void app_main(void)
         .pozicia = 0,
         .velkost_menu = 3,
         .zvolene = 0,
-        .start= true
+        .start= true,
+        .handle_in = &input_handle,
+        .handle_ou = &output_handle,
+        .reader = &reader,
+        .writer = &writer,
+        .kategoria = kategoria
     };
     
 
