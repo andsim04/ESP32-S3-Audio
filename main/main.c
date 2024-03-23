@@ -34,19 +34,13 @@ static const char *TAG = "boot";
 #define PIN_NUM_CS GPIO_NUM_10
 
 typedef struct menu_data {
-    // pthread_mutex_t menu_mutex;
-    // pthread_cond_t posun;
-    // pthread_cond_t potvrdenie;
     int pozicia;
-    bool potvrdenie_tl;
-    bool posun_tl;
     SSD1306_t * oled;
     int velkost_menu;
     int index_menu;
-    char hlavne_menu[VELKOST_MENU][10];
+    char menu_vyber[VELKOST_MENU][10];
     int zvolene;
     bool start;
-
 } MENU_DATA;
 
 void wait_for_button_push(void* thr_data)
@@ -59,7 +53,7 @@ void wait_for_button_push(void* thr_data)
             if (gpio_get_level(USR_BTN_1) == 0)
             {
                 //pthread_cond_signal(data->posun);
-                data->posun_tl = true;
+                
                 //data->index_menu++;
                 ESP_LOGI(TAG, "Stlacil");
             }
@@ -186,81 +180,54 @@ void vypis_nahravok()
     }
 }
 
-void posun_menu(void* thr_data) 
+void posun_menu(MENU_DATA * data) 
 {
-
-    MENU_DATA *data = (MENU_DATA *) thr_data;
-        bool invert = false;
-        int pocet_riadkov = 0;
-        if (data->index_menu > 1) {
-            
-            data->pozicia = 2;
-            if (data->velkost_menu > data->index_menu) {
-                if ((data->velkost_menu - data->index_menu) > 1) {
-                        pocet_riadkov = 2;
-                } else {
-                    pocet_riadkov = data->velkost_menu - data->index_menu;
-                    ssd1306_clear_line(data->oled, data->pozicia, false);
-                    ssd1306_clear_line(data->oled, data->pozicia + 1, false);
-                }
-                for (int i = 0; i < pocet_riadkov; i++) 
-                {
-                    if (data->pozicia >= 4) 
-                    {
-                        break;
-                    }
-                    if (data->zvolene + 1 == data->index_menu) {
-                        data->zvolene = data->index_menu;
-                        invert = true;
-                    }
-                    ssd1306_clear_line(data->oled, data->pozicia + i, false);
-                    ssd1306_display_text(data->oled, data->pozicia + i, data->hlavne_menu[data->index_menu + i], strlen(data->hlavne_menu[data->index_menu + i]), invert);
-                    data->index_menu += 1;
-                    data->pozicia += 1; 
-                    
-		            vTaskDelay(500 / portTICK_PERIOD_MS);
-                    //TODO: dorobit ak by bolo viac ako 4 moznosti v menu
-                }
-            } else {
-                data->pozicia = 2;
-                data->index_menu = 0;
-                data->zvolene = 0;
-                data->start = true;
-                bool jano = false;
-                for (int i = 0; i < 2; i++)
-                {
-                    if(!jano) {
-                        invert = true;
-                        jano = true;
-                        data->zvolene = data->index_menu;
-                    } else {
-                        invert = false;    
-                    }
-                
-                    ssd1306_clear_line(data->oled, data->pozicia + i, false);
-                    ssd1306_display_text(data->oled, data->pozicia + i, data->hlavne_menu[data->index_menu+ i], strlen(data->hlavne_menu[data->index_menu + i]), invert);
-                    
-                }
-            }
+    
+        bool invert;
+        int pocet_riadkov;
+        if ((data->velkost_menu - data->index_menu) > 1) {
+            pocet_riadkov = 2;
+        }
+        else if ((data->velkost_menu - data->index_menu) <= 0) {
+            data->index_menu = 0;
+            data->start = true;
+            pocet_riadkov = 2;
         } else {
-            ESP_LOGI(TAG, "Start");
-            bool jano = false;
-            for (int i = 0; i < 2; i++)
-            {
-                if(jano) {
-                    invert = true;
-                    data->zvolene = data->index_menu;
-                } else {
-                    jano = true;
-                }
-                ssd1306_clear_line(data->oled, data->pozicia + i, false);
-                ssd1306_display_text(data->oled, data->pozicia + i, data->hlavne_menu[data->index_menu], strlen(data->hlavne_menu[data->index_menu]), invert);
-                
-                ++data->index_menu;
-            }
+            pocet_riadkov = 1;
+        }
+        
+        
+
+        if (data->start) 
+        {
             
+            data->start = false;
+            data->zvolene = 0;
+            
+
+        } else {
+            data->zvolene++;
+        }
+
+        
+
+        ssd1306_clear_line(data->oled, data->pozicia, false);
+        ssd1306_clear_line(data->oled, data->pozicia + 1, false);
+
+        for (int i = 0; i < pocet_riadkov; i++)
+        {
+           if ((i % 2) == 0) {
+            invert = true;
+           } else {
+            invert = false;
+           }
+           ssd1306_display_text(data->oled, data->pozicia + i, data->menu_vyber[data->index_menu + i], strlen(data->menu_vyber[data->index_menu + i]), invert);
             
         }
+        
+        data->index_menu++;
+    
+
     }
 
 
@@ -283,33 +250,20 @@ void menu(MENU_DATA* thr_data)
     ssd1306_display_text(data->oled, 0, "ESP32-S3-Audio", 15, false);
     ssd1306_display_text(data->oled, 1, "--------------", 15, false);
 
-    ssd1306_display_text(data->oled, 2, data->hlavne_menu[data->index_menu], strlen(data->hlavne_menu[data->index_menu]), true);
-    ssd1306_display_text(data->oled, 3, data->hlavne_menu[data->index_menu + 1], strlen(data->hlavne_menu[data->index_menu + 1]), false);
+    //ssd1306_display_text(data->oled, 2, data->menu_vyber[data->index_menu], strlen(data->menu_vyber[data->index_menu]), true);
+    //ssd1306_display_text(data->oled, 3, data->menu_vyber[data->index_menu + 1], strlen(data->menu_vyber[data->index_menu + 1]), false);
+    ssd1306_display_text(data->oled, 2, "Stlacte tla 3/4", 16, true);
     data->pozicia = 2;
-    //pthread_mutex_unlock(data->menu_mutex);
+    data->zvolene = 0;
+   
         
     while (true)
     {
-        // while (!data->bolo_stlacene)
-        // {
-        //     pthread_cond_wait(data->bolo_stlacene, data->menu_mutex);
-        // }
-       
         wait_for_button_push(data);
-       
         posun_menu(data);
-         ESP_LOGI(TAG, "Zvolene: %d", data->zvolene);
-                //ak bol posun
-        //ssd1306_display_text(data->oled, ++data->pozicia, hlavne_menu[++index_menu], 6, false);
-
+        ESP_LOGI(TAG, "Zvolene: %d", data->zvolene);
         
-
-        // vTaskDelay(1000/portTICK_PERIOD_MS);
-        // ssd1306_software_scroll(data->oled, 2, (data->oled->_pages-1) );
-        // for (int line=0;line<bottom+10;line++) {
-	    // if ( (line % (data->oled->_pages-1)) == 0) ssd1306_scroll_clear(data->oled);
-		// ssd1306_scroll_text(data->oled, hlavne_menu[2], strlen(hlavne_menu[2]), false);
-		vTaskDelay(500 / portTICK_PERIOD_MS);
+		vTaskDelay(200/ portTICK_PERIOD_MS);
 	}
         
         
@@ -360,11 +314,9 @@ void app_main(void)
     
 
     MENU_DATA menu_data =  {
-        .hlavne_menu = {"Prehrat\0", "Nahrat\0", "Wifi\0"},
+        .menu_vyber = {"Prehrat\0", "Nahrat\0", "Wifi\0"},
         .index_menu = 0,
         .oled = &oled,
-        .posun_tl = false,
-        .potvrdenie_tl = false,
         .pozicia = 0,
         .velkost_menu = 3,
         .zvolene = 0,
