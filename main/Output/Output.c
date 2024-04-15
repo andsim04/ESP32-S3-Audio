@@ -9,8 +9,8 @@ i2s_chan_handle_t i2s_out_init()
     i2s_new_channel(&chan_cfg, &handle, NULL);
 
     i2s_std_config_t std_cfg = {
-    .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(40000),
-    .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_MONO),
+    .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(16000),
+    .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_MONO),
     .gpio_cfg = {
         .mclk = I2S_GPIO_UNUSED,
         .bclk = GPIO_NUM_21,
@@ -50,7 +50,7 @@ void write_ou(i2s_chan_handle_t* handle, int16_t* samples, int count)
         int samples_to_send = 0;
         for (int i = 0; i <  FRAMES && sample_index < count; i++)
         {
-            int sample = process_sample(samples[sample_index]);
+            int sample = (samples[sample_index]); 
             frames[i * 2] = sample;
             frames[i * 2 + 1] = sample;
             samples_to_send++;
@@ -67,6 +67,4 @@ void write_ou(i2s_chan_handle_t* handle, int16_t* samples, int count)
   free(frames);
 }
 
-int16_t process_sample(int16_t sample) {
-  return sample;
-}
+

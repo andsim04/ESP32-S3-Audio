@@ -116,6 +116,38 @@ void record(i2s_chan_handle_t * handle, WAVFILEWRITER* writer, const char *fname
     
 } 
 
+void record_play(i2s_chan_handle_t * handle_in, i2s_chan_handle_t * handle_ou)
+{
+    int16_t *samples = (int16_t*) malloc(sizeof(int16_t) * 1024);
+    ESP_LOGI(TAG, "Start recording");
+    start_in(handle_in);
+    start_ou(handle_ou);
+    size_t bytes_read = 0;
+    while (gpio_get_level(USR_BTN_1) == 0)
+    {
+    //    i2s_channel_read(*handle_in, samples, sizeof(int16_t) * 1024, &bytes_read, portMAX_DELAY);
+    //    i2s_channel_write(*handle_ou, samples, sizeof(int16_t) * 1024, &bytes_read, portMAX_DELAY);
+       
+       
+       int samples_read = read_i2s(handle_in, samples, 1024);
+    //    int64_t start = esp_timer_get_time();
+    //    int64_t end = esp_timer_get_time();
+       //ESP_LOGI(TAG, "Wrote %d samples in %lld microseconds", samples_read, end - start);
+       //ESP_LOGI(TAG, "Read %d samples", samples_read);
+       write_ou(handle_ou, samples, samples_read);
+       //ESP_LOGI(TAG, "Read %d samples", samples_read);
+       vTaskDelay(pdMS_TO_TICKS(1));
+    }
+    
+
+    stop_in(handle_in);
+    stop_ou(handle_ou);
+
+    free(samples);
+    ESP_LOGI(TAG, "Finished recording");
+    
+}
+
 void play(i2s_chan_handle_t * handle, WAVFILEREADER* reader, const char *fname)
 {
     int16_t * samples = (int16_t*)malloc(sizeof(int16_t) * 1024);
@@ -384,6 +416,7 @@ void app_main(void)
     gpio_set_direction(USR_BTN_1, GPIO_MODE_DEF_INPUT);
     gpio_pullup_en(USR_BTN_2);
     gpio_set_direction(USR_BTN_2, GPIO_MODE_DEF_INPUT);
+   
 
     WAVFILEWRITER writer;
     writer.m_header = header;
@@ -412,11 +445,13 @@ void app_main(void)
         
     while (true) 
     {
-        // wait_for_button_push();
-        // record(&input_handle, &writer, "/sdcard/test.wav");
+        wait_for_button_push();
+        record_play(&input_handle, &output_handle);
+        //record(&input_handle, &writer, "/sdcard/test.wav");
+
         // wait_for_button_push();
         // play(&output_handle, &reader,"/sdcard/test.wav" );
-        menu(&menu_data);
+        //menu(&menu_data);
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
    
