@@ -56,7 +56,7 @@ void write_ou(i2s_chan_handle_t* handle, int16_t* samples, int count)
             samples_to_send++;
             sample_index++;
         }
-        // write data to the i2s peripheral
+        
         size_t bytes_written = 0;
         i2s_channel_write(*handle, frames, samples_to_send * sizeof(int16_t) * 2, &bytes_written, portMAX_DELAY);
         if (bytes_written != samples_to_send * sizeof(int16_t) * 2)

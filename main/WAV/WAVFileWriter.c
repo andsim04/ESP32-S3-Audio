@@ -22,7 +22,6 @@ void write_wr(WAVFILEWRITER * writer ,int16_t *samples, int count)
 void finish(WAVFILEWRITER * writer)
 {
   ESP_LOGI(TAG, "Finishing wav file size: %d", writer->m_file_size);
-  // now fill in the header with the correct information and write it again
   writer->m_header.data_bytes = writer->m_file_size - sizeof(wav_header_t);
   writer->m_header.wav_size = writer->m_file_size - 8;
   fseek(writer->m_fp, 0, SEEK_SET);

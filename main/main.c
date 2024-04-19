@@ -68,13 +68,7 @@ bool wait_for_button_push()
                 return false;
             }
         return false;
-        //  if (gpio_get_level(USR_BTN_1) == 0)
-        //     {
-        //         ESP_LOGI(TAG, "Stlacil 3");
-        //         return true;
-        //     } else {
-        //         ESP_LOGI(TAG, "Stlacil 4");
-        //         return false;
+             return false;
          
     }
 
@@ -125,17 +119,13 @@ void record_play(i2s_chan_handle_t * handle_in, i2s_chan_handle_t * handle_ou)
     size_t bytes_read = 0;
     while (gpio_get_level(USR_BTN_1) == 0)
     {
-    //    i2s_channel_read(*handle_in, samples, sizeof(int16_t) * 1024, &bytes_read, portMAX_DELAY);
-    //    i2s_channel_write(*handle_ou, samples, sizeof(int16_t) * 1024, &bytes_read, portMAX_DELAY);
+
        
        
        int samples_read = read_i2s(handle_in, samples, 1024);
-    //    int64_t start = esp_timer_get_time();
-    //    int64_t end = esp_timer_get_time();
-       //ESP_LOGI(TAG, "Wrote %d samples in %lld microseconds", samples_read, end - start);
-       //ESP_LOGI(TAG, "Read %d samples", samples_read);
+ 
        write_ou(handle_ou, samples, samples_read);
-       //ESP_LOGI(TAG, "Read %d samples", samples_read);
+   
        vTaskDelay(pdMS_TO_TICKS(1));
     }
     
@@ -348,7 +338,7 @@ void menu(MENU_DATA* thr_data)
 	bottom = 4;
     
     
-    //pthread_mutex_lock(data->menu_mutex);
+   
     char lineChar[20];
     
     
@@ -356,8 +346,7 @@ void menu(MENU_DATA* thr_data)
     ssd1306_display_text(data->oled, 0, "ESP32-S3-Audio", 15, false);
     ssd1306_display_text(data->oled, 1, "--------------", 15, false);
 
-    //ssd1306_display_text(data->oled, 2, data->menu_vyber[data->index_menu], strlen(data->menu_vyber[data->index_menu]), true);
-    //ssd1306_display_text(data->oled, 3, data->menu_vyber[data->index_menu + 1], strlen(data->menu_vyber[data->index_menu + 1]), false);
+ 
     ssd1306_display_text(data->oled, 2, "Stlacte tla 3/4", 16, true);
     data->pozicia = 2;
     data->zvolene = 0;
@@ -370,9 +359,6 @@ void menu(MENU_DATA* thr_data)
         } else {
             potvrdenie_menu(data);
         }
-        
-      
-        
         
 		vTaskDelay(200/ portTICK_PERIOD_MS);
 	}
@@ -445,13 +431,13 @@ void app_main(void)
         
     while (true) 
     {
-        wait_for_button_push();
-        record_play(&input_handle, &output_handle);
+        //wait_for_button_push();
+        //record_play(&input_handle, &output_handle);
         //record(&input_handle, &writer, "/sdcard/test.wav");
 
         // wait_for_button_push();
         // play(&output_handle, &reader,"/sdcard/test.wav" );
-        //menu(&menu_data);
+        menu(&menu_data);
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
    

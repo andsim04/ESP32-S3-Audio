@@ -45,11 +45,10 @@ int read_i2s(i2s_chan_handle_t * handle, int16_t* samples, int count)
     if  (i2s_channel_read(*handle, raw_samples, sizeof(int32_t) * count, &bytes_read, portMAX_DELAY) == ESP_OK )
     {
         int samples_read = bytes_read / sizeof(int32_t);
-    //int samples_read = raw_samples;
         for (int i = 0; i < samples_read; i++)
         {
         samples[i] = (raw_samples[i] & 0xFFFFFFF0) >> 11;
-        //ESP_LOGE(TAG_IN, "%d" , samples[i]);
+   
         }
         free(raw_samples);
         return samples_read;
