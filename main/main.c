@@ -47,43 +47,37 @@ typedef struct menu_data {
     WAVFILEWRITER * writer;
     WAVFILEREADER * reader;
     char* kategoria;
+    SDCARD* card;
+    int pocetNahravok;
     
 } MENU_DATA;
 
 bool wait_for_button_push()
 {
    
-        while(gpio_get_level(USR_BTN_2) == 1 && gpio_get_level(USR_BTN_1) == 1) 
+    while(gpio_get_level(USR_BTN_2) == 1 && gpio_get_level(USR_BTN_1) == 1) 
+    {
+        vTaskDelay(20);
+    }
+    if (gpio_get_level(USR_BTN_1) == 0)
         {
-            
-            vTaskDelay(20);
+             return true;
+        } else {
+            return false;
         }
-
-        if (gpio_get_level(USR_BTN_1) == 0)
-            {
-                ESP_LOGI(TAG, "Stlacil 3");
-                return true;
-            } else {
-                ESP_LOGI(TAG, "Stlacil 4");
-                return false;
-            }
         return false;
-             return false;
+    return false;
          
     }
 
 void concatenate_string(char* s, char* s1)
 {
     int i;
- 
     int j = strlen(s);
- 
     for (i = 0; s1[i] != '\0'; i++) {
         s[i + j] = s1[i];
     }
- 
     s[i + j] = '\0';
- 
     return;
 }
 
@@ -93,14 +87,15 @@ void record(i2s_chan_handle_t * handle, WAVFILEWRITER* writer, const char *fname
     ESP_LOGI(TAG, "Start recording");
     start_in(handle);
     FILE* fp = fopen(fname, "wb");
-    WAVFileWriter_init(writer, fp, 44100);
-    while (gpio_get_level(USR_BTN_1) == 0) 
+    if ( fp == NULL ) {
+        ESP_LOGE(TAG,"Nenaslo subor");
+    }
+  
+    WAVFileWriter_init(writer, fp, 16000);
+    while (gpio_get_level(USR_BTN_2) == 0) 
     {
         int samples_read = read_i2s(handle, samples, 1024);
-        int64_t start = esp_timer_get_time();
-        write_wr(writer, samples, samples_read);
-        int64_t end = esp_timer_get_time();
-        ESP_LOGI(TAG, "Wrote %d samples in %lld microseconds", samples_read, end - start);
+        write_wr(writer, samples, samples_read);      
     }
     stop_in(handle);
     finish(writer);
@@ -119,31 +114,26 @@ void record_play(i2s_chan_handle_t * handle_in, i2s_chan_handle_t * handle_ou)
     size_t bytes_read = 0;
     while (gpio_get_level(USR_BTN_1) == 0)
     {
-
-       
-       
        int samples_read = read_i2s(handle_in, samples, 1024);
- 
        write_ou(handle_ou, samples, samples_read);
-   
        vTaskDelay(pdMS_TO_TICKS(1));
     }
-    
-
     stop_in(handle_in);
     stop_ou(handle_ou);
-
     free(samples);
     ESP_LOGI(TAG, "Finished recording");
     
 }
 
-void play(i2s_chan_handle_t * handle, WAVFILEREADER* reader, const char *fname)
+void play(i2s_chan_handle_t * handle, SDCARD * card, WAVFILEREADER* reader, const char *fname)
 {
     int16_t * samples = (int16_t*)malloc(sizeof(int16_t) * 1024);
 
-    FILE* fp = fopen(fname, "rb");
-
+     FILE* fp; 
+    if ( (fp = fopen(fname, "rb")) == NULL) {
+        ESP_LOGE(TAG, "Nenasiel sa subor.\n");
+       
+    }
     WAVFileReader(reader, fp);
 
     ESP_LOGI(TAG, "Start playing");
@@ -157,18 +147,16 @@ void play(i2s_chan_handle_t * handle, WAVFILEREADER* reader, const char *fname)
     {
         break;
     }
-    ESP_LOGI(TAG, "Read %d samples", samples_read);
-    write_ou(handle, samples, samples_read);
-    ESP_LOGI(TAG, "Played samples");
+        ESP_LOGI(TAG, "Read %d samples", samples_read);
+        write_ou(handle, samples, samples_read);
+        ESP_LOGI(TAG, "Played samples");
     }
 
     stop_ou(handle);
-    fclose(fp);
-
+    fclose(fp);   
     free(samples);
     ESP_LOGI(TAG, "Finished playing");
 }
-
 
 void vypis_nahravok(MENU_DATA * data) 
 {
@@ -178,13 +166,12 @@ void vypis_nahravok(MENU_DATA * data)
         return;
     }
 
-    // Read directory entries
     struct dirent* entry;
     int sum_files = 0;
 
     while ((entry = readdir(dir)) != NULL) {
         sum_files++;
-        //ESP_LOGI(TAG, "%s", entry->d_name);
+    
         int i = 0;
         while (entry->d_name[i] !='\0') {
             i++;
@@ -202,8 +189,7 @@ void vypis_nahravok(MENU_DATA * data)
         }
         strcpy(file_names[pom], entry->d_name);
         pom++;
-        
-        
+         
     }
     closedir(dir);
 
@@ -220,10 +206,8 @@ void vypis_nahravok(MENU_DATA * data)
     }
     
     data->velkost_menu = sum_files + 1;
-
+    data->pocetNahravok = sum_files;
    
-    
-
     ESP_LOGI(TAG, "Pocet suborov na sd karte: %d", sum_files);
     for (int i = 0; i < sum_files + 1; i++)
     {
@@ -234,7 +218,6 @@ void vypis_nahravok(MENU_DATA * data)
 
 void posun_menu(MENU_DATA * data) 
 {
-    
     bool invert;
     int pocet_riadkov;
     if ((data->velkost_menu - data->index_menu) > 1) {
@@ -247,21 +230,13 @@ void posun_menu(MENU_DATA * data)
     } else {
         pocet_riadkov = 1;
     }
-        
-        
-
     if (data->start) 
-    {
-            
+    {  
         data->start = false;
         data->zvolene = 0;
-            
-
     } else {
         data->zvolene++;
     }
-
-        
 
     ssd1306_clear_line(data->oled, data->pozicia, false);
     ssd1306_clear_line(data->oled, data->pozicia + 1, false);
@@ -278,17 +253,14 @@ void posun_menu(MENU_DATA * data)
         } else {
             ssd1306_display_text(data->oled, data->pozicia + i, data->nahravky[data->index_menu + i],strlen(data->nahravky[data->index_menu + i]) , invert);
         }
-    }
-    
-        
+    }     
     data->index_menu++;
 }
 
 void potvrdenie_menu(MENU_DATA* data) {
-
     if (strcmp(data->kategoria, "hlavne") == 0) {
 
-    
+    ESP_LOGE(TAG, "%d", data->zvolene);
         switch (data->zvolene)
         {
         case 0:
@@ -300,7 +272,13 @@ void potvrdenie_menu(MENU_DATA* data) {
             posun_menu(data);
             break;
         case 1:
-            record(data->handle_in, data->writer, "test"); // dorobit play
+        char* cesta = "/sdcard/nahravky/Nahravka";
+        char cisloNahravky[20];
+        sprintf(cisloNahravky, "%d", data->pocetNahravok + 1);
+        concatenate_string(cesta, cisloNahravky);
+        concatenate_string(cesta, ".waw");
+        ESP_LOGE(TAG, "%s", cesta);
+            record(data->handle_in, data->writer, cesta); // dorobit play
             break;
         case 2:
 
@@ -309,70 +287,51 @@ void potvrdenie_menu(MENU_DATA* data) {
             break;
         }
     } else {
+        ESP_LOGE(TAG, "%d", data->zvolene);
         if (data->zvolene == 0) {
+            data->start = true;
             data->kategoria = "hlavne";
             data->index_menu = 0;
             free(data->nahravky);
             data->velkost_menu = VELKOST_MENU;
             posun_menu(data); 
-            
+            data->zvolene = 0;       
         } else {
-            ;
+            for (int i = 0; i < data->pocetNahravok + 1; i++)
+            {
+                ESP_LOGE(TAG, "Nahravka c. %d:", i);
+                ESP_LOGE(TAG, "%s", data->nahravky[i]);
+            }
             char* cesta = "/sdcard/nahravky/";
             concatenate_string(cesta, data->nahravky[data->zvolene]);
-            play(data->handle_ou, data->reader, cesta);
+            play(data->handle_ou, data->card, data->reader, cesta);
+           
         }
     }
-
 }
-
-
-
 
 void menu(MENU_DATA* thr_data) 
 {
     MENU_DATA *data = (MENU_DATA *) thr_data;
-    int center, top, bottom;
-    top = 1;
-	center = 1;
-	bottom = 4;
-    
-    
-   
-    char lineChar[20];
-    
-    
+ 
     ssd1306_clear_screen(data->oled, false);
     ssd1306_display_text(data->oled, 0, "ESP32-S3-Audio", 15, false);
     ssd1306_display_text(data->oled, 1, "--------------", 15, false);
 
- 
-    ssd1306_display_text(data->oled, 2, "Stlacte tla 3/4", 16, true);
     data->pozicia = 2;
     data->zvolene = 0;
    
-        
+    posun_menu(data);    
     while (true)
-    {
+    {   
         if (wait_for_button_push()) {
             posun_menu(data);
         } else {
             potvrdenie_menu(data);
-        }
-        
+        } 
 		vTaskDelay(200/ portTICK_PERIOD_MS);
-	}
-        
-        
-        
+	}       
 }
-    
-  
-    
-
-
-
-
 
 void app_main(void)
 {
@@ -391,9 +350,13 @@ void app_main(void)
     init_header(&header);
 
     SDCARD card;
+    bool chyba_karty = false;
     ESP_LOGI(TAG, "Starting up");
     ESP_LOGI(TAG, "Mounting SDCard on /sdcard");
-    SdCard_init(&card, "/sdcard", PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK, PIN_NUM_CS);
+    if (SdCard_init(&card, "/sdcard", PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK, PIN_NUM_CS) != ESP_OK) 
+    {
+        chyba_karty = true;
+    }
 
     i2s_chan_handle_t input_handle = i2s_in_init();
     i2s_chan_handle_t output_handle = i2s_out_init();
@@ -423,24 +386,23 @@ void app_main(void)
         .handle_ou = &output_handle,
         .reader = &reader,
         .writer = &writer,
-        .kategoria = kategoria
+        .kategoria = kategoria,
+        .card = &card ,
+        .pocetNahravok = 0
     };
-    
-
-        
-        
+       
     while (true) 
     {
-        //wait_for_button_push();
         //record_play(&input_handle, &output_handle);
-        //record(&input_handle, &writer, "/sdcard/test.wav");
-
-        // wait_for_button_push();
-        // play(&output_handle, &reader,"/sdcard/test.wav" );
-        menu(&menu_data);
+        if (chyba_karty == true) {
+            ssd1306_clear_line(&oled, 3, false);
+            ssd1306_clear_line(&oled, 4, false);
+            ssd1306_display_text(&oled, 2, "Chyba karty SD", 15 , false);
+            ssd1306_display_text(&oled, 3, "Resetujte ESP", 14 , false);
+        } else {
+            menu(&menu_data);
+        }
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
-   
-
     
 }

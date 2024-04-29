@@ -5,7 +5,8 @@
 #include <stdio.h>
 #include "WAVFile.h"
 
-
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 typedef struct WAVFileReader
 {
@@ -17,6 +18,7 @@ typedef struct WAVFileReader
     void WAVFileReader(WAVFILEREADER * reader, FILE *fp);
     int sample_rate();
     int read_fr(WAVFILEREADER * reader, int16_t *samples, int count);
+    void deleteReader(WAVFILEREADER * reader);
 
 
 #endif

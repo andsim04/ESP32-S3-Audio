@@ -31,5 +31,7 @@ int sample_rate(WAVFILEREADER * reader)
 int read_fr(WAVFILEREADER * reader , int16_t *samples, int count) 
 {
     size_t read = fread(samples, sizeof(int16_t), count, reader->m_fp);
+    
     return read;
 }
+

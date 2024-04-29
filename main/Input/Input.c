@@ -28,6 +28,9 @@ i2s_chan_handle_t i2s_in_init()
         },
     };
     std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_RIGHT;
+
+
+    
     i2s_channel_init_std_mode(handle, &std_cfg);
     ESP_LOGE(TAG_IN, "Microphone created");
     return handle;

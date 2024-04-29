@@ -19,7 +19,7 @@ typedef struct SDCard {
 
 } SDCARD;
 
-void SdCard_init(SDCARD * card, const char *mount_point, gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk, gpio_num_t cs);
+esp_err_t SdCard_init(SDCARD * card, const char *mount_point, gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk, gpio_num_t cs);
 
 void freeCard(SDCARD * card);
 
