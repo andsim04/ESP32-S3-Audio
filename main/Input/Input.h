@@ -10,9 +10,6 @@
 #include "esp_err.h"
 #include "esp_log.h"
 
-
-
-
 i2s_chan_handle_t i2s_in_init();
 void start_in(i2s_chan_handle_t * handle);
 int read_i2s(i2s_chan_handle_t * handle, int16_t* samples, int count);

@@ -21,8 +21,6 @@ esp_err_t SdCard_init(SDCARD * card ,const char *mount_point, gpio_num_t miso, g
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
     host.command_timeout_ms = 10000;
     card->m_host = host;
-    
-    
     esp_err_t ret;
 
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
@@ -48,13 +46,12 @@ esp_err_t SdCard_init(SDCARD * card ,const char *mount_point, gpio_num_t miso, g
     return ret;
   }
 
-   sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+  sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
   slot_config.gpio_cs = cs;
   slot_config.host_id = (spi_host_device_t)(card->m_host.slot);
 
   ret = esp_vfs_fat_sdspi_mount(card->m_mount_point, &card->m_host, &slot_config, &mount_config, &card->m_card);
   
-
   if (ret != ESP_OK)
   {
     if (ret == ESP_FAIL)
@@ -72,17 +69,13 @@ esp_err_t SdCard_init(SDCARD * card ,const char *mount_point, gpio_num_t miso, g
     return ret;
   }
   ESP_LOGI(TAG, "SDCard mounted at: %s", card->m_mount_point);
- 
   sdmmc_card_print_info(stdout, card->m_card);
-
   return ret;
 }
-
 
 void freeCard(SDCARD* card) 
 {
   esp_vfs_fat_sdcard_unmount(card->m_mount_point, card->m_card);
   ESP_LOGI(TAG, "Card unmounted");
-  //deinitialize the bus after all devices are removed
   spi_bus_free((spi_host_device_t)(card->m_host.slot));
 }

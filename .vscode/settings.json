@@ -26,7 +26,13 @@
         "task.h": "c",
         "freertos.h": "c",
         "esp_pthread.h": "c",
-        "format": "c"
+        "format": "c",
+        "string.h": "c",
+        "sdmmc_cmd.h": "c",
+        "esp_vfs_fat.h": "c",
+        "spi_common.h": "c",
+        "sdspi_host.h": "c",
+        "sdmmc_types.h": "c"
     },
     "idf.flashType": "UART",
     "idf.monitorBaudRate": "115200",

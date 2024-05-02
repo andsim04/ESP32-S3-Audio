@@ -9,6 +9,7 @@
 #include "esp_log.h"
 #include "driver/i2c_master.h"
 #include "SDCard/SDCard.h"
+#include "esp_vfs_fat.h"
 #include "WAV/WAVFile.h"
 #include "WAV/WAVFileReader.h"
 #include "WAV/WAVFileWriter.h"
@@ -20,6 +21,7 @@
 #include <string.h>
 #include "esp_pthread.h"
 #include "pthread.h"
+#include "Wifi/wifi.c"
 
 static const char *TAG = "boot";
 
@@ -176,7 +178,6 @@ void vypis_nahravok(MENU_DATA * data)
         while (entry->d_name[i] !='\0') {
             i++;
         }
-        
     }
 
     closedir(dir);
@@ -276,12 +277,19 @@ void potvrdenie_menu(MENU_DATA* data) {
         char cisloNahravky[20];
         sprintf(cisloNahravky, "%d", data->pocetNahravok + 1);
         concatenate_string(cesta, cisloNahravky);
-        concatenate_string(cesta, ".waw");
+        concatenate_string(cesta, ".wav");
         ESP_LOGE(TAG, "%s", cesta);
             record(data->handle_in, data->writer, cesta); // dorobit play
             break;
         case 2:
-
+            esp_err_t ret = nvs_flash_init();
+            if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+                ESP_ERROR_CHECK(nvs_flash_erase());
+                ret = nvs_flash_init();
+            }
+            ESP_ERROR_CHECK(ret);
+            ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
+            wifi_init_sta();
             break;
         default:
             break;
@@ -314,16 +322,15 @@ void menu(MENU_DATA* thr_data)
 {
     MENU_DATA *data = (MENU_DATA *) thr_data;
  
-    ssd1306_clear_screen(data->oled, false);
-    ssd1306_display_text(data->oled, 0, "ESP32-S3-Audio", 15, false);
-    ssd1306_display_text(data->oled, 1, "--------------", 15, false);
+    
 
     data->pozicia = 2;
     data->zvolene = 0;
-   
+    sdmmc_card_t* testCard = NULL;
     posun_menu(data);    
     while (true)
     {   
+    
         if (wait_for_button_push()) {
             posun_menu(data);
         } else {
@@ -343,8 +350,6 @@ void app_main(void)
 	i2c_master_init(&oled, CONFIG_SDA_GPIO, CONFIG_SCL_GPIO, CONFIG_RESET_GPIO);
     ESP_LOGI(TAG, "Panel is 128x32");
 	ssd1306_init(&oled, 128, 32);
-    int center, top, bottom;
-    char lineChar[20];
 
     wav_header_t header;
     init_header(&header);
@@ -390,7 +395,9 @@ void app_main(void)
         .card = &card ,
         .pocetNahravok = 0
     };
-       
+    ssd1306_clear_screen(&oled, false);
+    ssd1306_display_text(&oled, 0, "ESP32-S3-Audio", 15, false);
+    ssd1306_display_text(&oled, 1, "--------------", 15, false);
     while (true) 
     {
         //record_play(&input_handle, &output_handle);

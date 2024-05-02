@@ -16,7 +16,9 @@
                 "C:/Users/andre/esp/v5.2.1/esp-idf/components/soc/esp32s3/include",
                 "C:/Users/andre/esp/v5.2.1/esp-idf/components/freertos/FreeRTOS-Kernel/include",
                 "C:/Users/andre/esp/v5.2.1/esp-idf/components/freertos/config/include/freertos",
-                "C:/Users/andre/esp/v5.2.1/esp-idf/components/driver/sdmmc/include"
+                "C:/Users/andre/esp/v5.2.1/esp-idf/components/driver/sdmmc/include",
+                "${workspaceFolder}/build/bootloader/config",
+                "C:/Users/andre/esp/v5.2.1/esp-idf/components/lwip/lwip/src/include/compat/posix"
             ],
             "browse": {
                 "path": [
