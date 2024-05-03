@@ -7,6 +7,7 @@
 #include "esp_lcd_panel_ops.h"
 #include "esp_err.h"
 #include "esp_log.h"
+#include "Wifi/client.c"
 #include "driver/i2c_master.h"
 #include "SDCard/SDCard.h"
 #include "esp_vfs_fat.h"
@@ -273,23 +274,16 @@ void potvrdenie_menu(MENU_DATA* data) {
             posun_menu(data);
             break;
         case 1:
-        char* cesta = "/sdcard/nahravky/Nahravka";
-        char cisloNahravky[20];
-        sprintf(cisloNahravky, "%d", data->pocetNahravok + 1);
-        concatenate_string(cesta, cisloNahravky);
-        concatenate_string(cesta, ".wav");
+        char* cesta = "/sdcard/nahravky/test.wav";
+        //char cisloNahravky[20];
+        //sprintf(cisloNahravky, "%d", data->pocetNahravok + 1);
+        //concatenate_string(cesta, cisloNahravky);
+        //concatenate_string(cesta, ".wav");
         ESP_LOGE(TAG, "%s", cesta);
             record(data->handle_in, data->writer, cesta); // dorobit play
             break;
         case 2:
-            esp_err_t ret = nvs_flash_init();
-            if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-                ESP_ERROR_CHECK(nvs_flash_erase());
-                ret = nvs_flash_init();
-            }
-            ESP_ERROR_CHECK(ret);
-            ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
-            wifi_init_sta();
+            odosli_subor("158.193.140.91", "10025", "/sdcard/nahravky/test.wav");
             break;
         default:
             break;
@@ -371,6 +365,15 @@ void app_main(void)
     gpio_pullup_en(USR_BTN_2);
     gpio_set_direction(USR_BTN_2, GPIO_MODE_DEF_INPUT);
    
+
+    esp_err_t ret = nvs_flash_init();
+            if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+                ESP_ERROR_CHECK(nvs_flash_erase());
+                ret = nvs_flash_init();
+            }
+            ESP_ERROR_CHECK(ret);
+            ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
+            wifi_init_sta();
 
     WAVFILEWRITER writer;
     writer.m_header = header;
