@@ -19,7 +19,7 @@ esp_err_t SdCard_init(SDCARD * card ,const char *mount_point, gpio_num_t miso, g
 {
     card->m_mount_point = mount_point;
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-    host.command_timeout_ms = 10000;
+    host.command_timeout_ms = 1000;
     card->m_host = host;
     esp_err_t ret;
 
@@ -36,7 +36,7 @@ esp_err_t SdCard_init(SDCARD * card ,const char *mount_point, gpio_num_t miso, g
       .sclk_io_num = clk,
       .quadwp_io_num = -1,
       .quadhd_io_num = -1,
-      .max_transfer_sz = 4000,
+      .max_transfer_sz = 4092,
       .flags = 0,
       .intr_flags = 0};
   ret = spi_bus_initialize((spi_host_device_t)(card->m_host.slot), &bus_cfg, SPI_DMA_CH_AUTO);

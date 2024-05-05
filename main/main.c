@@ -1,5 +1,3 @@
-
-
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -73,17 +71,6 @@ bool wait_for_button_push()
          
     }
 
-void concatenate_string(char* s, char* s1)
-{
-    int i;
-    int j = strlen(s);
-    for (i = 0; s1[i] != '\0'; i++) {
-        s[i + j] = s1[i];
-    }
-    s[i + j] = '\0';
-    return;
-}
-
 void record(i2s_chan_handle_t * handle, WAVFILEWRITER* writer, const char *fname) 
 {
     int16_t *samples = (int16_t*) malloc(sizeof(int16_t) * 1024);
@@ -132,12 +119,12 @@ void play(i2s_chan_handle_t * handle, SDCARD * card, WAVFILEREADER* reader, cons
 {
     int16_t * samples = (int16_t*)malloc(sizeof(int16_t) * 1024);
 
-     FILE* fp; 
-    if ( (fp = fopen(fname, "rb")) == NULL) {
+    FILE* fp = fopen(fname, "rb"); 
+    if (fp  == NULL) {
         ESP_LOGE(TAG, "Nenasiel sa subor.\n");
        
     }
-    WAVFileReader(reader, fp);
+    WAVFileReader_init(reader, fp);
 
     ESP_LOGI(TAG, "Start playing");
     start_ou(handle);
@@ -165,8 +152,8 @@ void vypis_nahravok(MENU_DATA * data)
 {
     DIR* dir = opendir("/sdcard/nahravky");
     if (!dir) {
-        ESP_LOGE(TAG, "Failed to open directory.");
-        return;
+        mkdir("/sdcard/nahravky", S_IRWXU);
+        dir = opendir("/sdcard/nahravky");
     }
 
     struct dirent* entry;
@@ -218,6 +205,7 @@ void vypis_nahravok(MENU_DATA * data)
     }
 }
 
+
 void posun_menu(MENU_DATA * data) 
 {
     bool invert;
@@ -250,7 +238,7 @@ void posun_menu(MENU_DATA * data)
         } else {
             invert = false;
         }
-        if (strcmp(data->kategoria, "hlavne") == 0) { //zatial dve ak bude treba da sa rozsirit
+        if (strcmp(data->kategoria, "hlavne") == 0) { 
             ssd1306_display_text(data->oled, data->pozicia + i, data->menu_vyber[data->index_menu + i], strlen(data->menu_vyber[data->index_menu + i]), invert);
         } else {
             ssd1306_display_text(data->oled, data->pozicia + i, data->nahravky[data->index_menu + i],strlen(data->nahravky[data->index_menu + i]) , invert);
@@ -261,8 +249,15 @@ void posun_menu(MENU_DATA * data)
 
 void potvrdenie_menu(MENU_DATA* data) {
     if (strcmp(data->kategoria, "hlavne") == 0) {
-
-    ESP_LOGE(TAG, "%d", data->zvolene);
+        //ESP_LOGE(TAG, "%d", data->zvolene);
+        char* cesta = "/sdcard/nahravky/test";
+        char intString[12];
+        char filePath[50];
+        strcpy(filePath, cesta);
+        char* fileExtension = ".wav";
+        sprintf(intString, "%d", data->pocetNahravok + 1);
+        strcat(filePath, intString);
+        strcat(filePath, fileExtension);
         switch (data->zvolene)
         {
         case 0:
@@ -274,16 +269,18 @@ void potvrdenie_menu(MENU_DATA* data) {
             posun_menu(data);
             break;
         case 1:
-        char* cesta = "/sdcard/nahravky/test.wav";
-        //char cisloNahravky[20];
-        //sprintf(cisloNahravky, "%d", data->pocetNahravok + 1);
-        //concatenate_string(cesta, cisloNahravky);
-        //concatenate_string(cesta, ".wav");
-        ESP_LOGE(TAG, "%s", cesta);
-            record(data->handle_in, data->writer, cesta); // dorobit play
+            ESP_LOGE(TAG, "%s", filePath);
+            record(data->handle_in, data->writer, filePath); 
+            data->pocetNahravok += 1;
             break;
         case 2:
-            odosli_subor("158.193.140.91", "10025", "/sdcard/nahravky/test.wav");
+            char* cesta = "/sdcard/nahravky/";
+            char filePath[50];
+            strcpy(filePath, cesta);
+            strcat(filePath, data->nahravky[data->pocetNahravok]);
+            char* fileName = data->nahravky[data->pocetNahravok];
+            odosli_subor("frios2.fri.uniza.sk", "10025", filePath, fileName);
+            //158.193.140.91
             break;
         default:
             break;
@@ -299,28 +296,24 @@ void potvrdenie_menu(MENU_DATA* data) {
             posun_menu(data); 
             data->zvolene = 0;       
         } else {
-            for (int i = 0; i < data->pocetNahravok + 1; i++)
-            {
-                ESP_LOGE(TAG, "Nahravka c. %d:", i);
-                ESP_LOGE(TAG, "%s", data->nahravky[i]);
-            }
             char* cesta = "/sdcard/nahravky/";
-            concatenate_string(cesta, data->nahravky[data->zvolene]);
-            play(data->handle_ou, data->card, data->reader, cesta);
-           
+            char filePath[50];
+            strcpy(filePath, cesta);
+            strcat(filePath, data->nahravky[data->zvolene]);
+            play(data->handle_ou, data->card, data->reader, filePath);
+        
         }
     }
 }
+
+
 
 void menu(MENU_DATA* thr_data) 
 {
     MENU_DATA *data = (MENU_DATA *) thr_data;
  
-    
-
     data->pozicia = 2;
     data->zvolene = 0;
-    sdmmc_card_t* testCard = NULL;
     posun_menu(data);    
     while (true)
     {   
@@ -398,6 +391,7 @@ void app_main(void)
         .card = &card ,
         .pocetNahravok = 0
     };
+    vypis_nahravok(&menu_data);
     ssd1306_clear_screen(&oled, false);
     ssd1306_display_text(&oled, 0, "ESP32-S3-Audio", 15, false);
     ssd1306_display_text(&oled, 1, "--------------", 15, false);

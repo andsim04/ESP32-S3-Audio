@@ -4,7 +4,7 @@
 
 static const char *TAG = "WAV";
 
-void WAVFileReader(WAVFILEREADER * reader, FILE *fp) 
+void WAVFileReader_init(WAVFILEREADER * reader, FILE *fp) 
 {
     reader->m_fp = fp;
     fread((void *)&reader->m_wav_header, sizeof(wav_header_t), 1, reader->m_fp);

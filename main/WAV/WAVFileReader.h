@@ -14,7 +14,7 @@ typedef struct WAVFileReader
     FILE *m_fp;
 }WAVFILEREADER;
     
-    void WAVFileReader(WAVFILEREADER * reader, FILE *fp);
+    void WAVFileReader_init(WAVFILEREADER * reader, FILE *fp);
     int sample_rate();
     int read_fr(WAVFILEREADER * reader, int16_t *samples, int count);
     void deleteReader(WAVFILEREADER * reader);

@@ -32,7 +32,14 @@
         "esp_vfs_fat.h": "c",
         "spi_common.h": "c",
         "sdspi_host.h": "c",
-        "sdmmc_types.h": "c"
+        "sdmmc_types.h": "c",
+        "cstring": "c",
+        "array": "c",
+        "bitset": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "span": "c",
+        "regex": "c"
     },
     "idf.flashType": "UART",
     "idf.monitorBaudRate": "115200",

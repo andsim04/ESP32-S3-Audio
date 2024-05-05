@@ -65,17 +65,16 @@ Status GetAddrForDomain(Config *config, struct addrinfo **server_info);
 // Receive buffer size (<= 1) - does not really matter with TCP
 #define RECEIVE_BUFSIZE 1024
 
-// Terminate connection character
-#define TERMINATE_CHAR '!'
 
-int odosli_subor(char* hostName, int port, char* fileName)
+
+int odosli_subor(char* hostName, char* port, char* filePath, char* fileName)
 {
 
     char send_buffer[SEND_BUFSIZE] = {0};
     Config config;
     config.server_hostname = hostName;
     config.port_string = port;
-    config.path = fileName;
+    config.path = filePath;
     // Check and parse arguments
    
 
@@ -105,7 +104,6 @@ int odosli_subor(char* hostName, int port, char* fileName)
     size = ftell(fp);
     rewind(fp);
     printf("%d\n", size);
-    bool terminate_char_found = false;
     send(client_socket, &size, sizeof(int) , 0);
     int celkovo = 0;
     while (!feof(fp))
@@ -114,6 +112,7 @@ int odosli_subor(char* hostName, int port, char* fileName)
         fread(send_buffer, SEND_BUFSIZE, 1, fp); 
         if (send(client_socket, send_buffer, sizeof(send_buffer), 0) <= 0) {
             ESP_LOGE(TAG_TCP, "No data has been sent to the server!\n");
+            break;
         }
         
     }
