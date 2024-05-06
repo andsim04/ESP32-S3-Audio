@@ -1,4 +1,7 @@
 
+/*
+    Prevzaté a upravené z: https://github.com/atomic14/esp32_sdcard_audio/tree/main/idf-wav-sdcard/lib/sd_card/src
+*/
 
 #include <hal/gpio_types.h>
 #include <driver/sdmmc_types.h>

@@ -39,7 +39,9 @@
         "string_view": "c",
         "initializer_list": "c",
         "span": "c",
-        "regex": "c"
+        "regex": "c",
+        "wavfile.h": "c",
+        "dirent.h": "c"
     },
     "idf.flashType": "UART",
     "idf.monitorBaudRate": "115200",

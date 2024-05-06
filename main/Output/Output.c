@@ -41,6 +41,9 @@ void stop_ou(i2s_chan_handle_t* handle)
     i2s_channel_disable(*handle);
 }
 
+/*
+    Metóda prevzatá  a upravená z: https://github.com/atomic14/esp32_sdcard_audio/blob/main/idf-wav-sdcard/lib/audio_output/src/Output.cpp
+*/
 void write_ou(i2s_chan_handle_t* handle, int16_t* samples, int count) 
 {
     int16_t *frames = (int16_t *)malloc(2 * sizeof(int16_t) *  FRAMES);

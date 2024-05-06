@@ -71,6 +71,9 @@ bool wait_for_button_push()
          
     }
 
+/*
+    Metóda prevzatá a upravená z: https://github.com/atomic14/esp32_sdcard_audio/blob/main/idf-wav-sdcard/src/main.cpp
+*/
 void record(i2s_chan_handle_t * handle, WAVFILEWRITER* writer, const char *fname) 
 {
     int16_t *samples = (int16_t*) malloc(sizeof(int16_t) * 1024);
@@ -115,6 +118,10 @@ void record_play(i2s_chan_handle_t * handle_in, i2s_chan_handle_t * handle_ou)
     
 }
 
+
+/*
+    Metóda prevzatá a upravená z: https://github.com/atomic14/esp32_sdcard_audio/blob/main/idf-wav-sdcard/src/main.cpp
+*/
 void play(i2s_chan_handle_t * handle, SDCARD * card, WAVFILEREADER* reader, const char *fname)
 {
     int16_t * samples = (int16_t*)malloc(sizeof(int16_t) * 1024);
@@ -194,7 +201,7 @@ void vypis_nahravok(MENU_DATA * data)
        strcpy(data->nahravky[i], file_names[i - 1]);   
     }
     
-    data->velkost_menu = sum_files + 1;
+    
     data->pocetNahravok = sum_files;
    
     ESP_LOGI(TAG, "Pocet suborov na sd karte: %d", sum_files);
@@ -265,6 +272,7 @@ void potvrdenie_menu(MENU_DATA* data) {
             data->zvolene = 0;
             data->index_menu = 0;
             vypis_nahravok(data);
+            data->velkost_menu = data->pocetNahravok + 1;
             data->start = true;
             posun_menu(data);
             break;
@@ -279,7 +287,7 @@ void potvrdenie_menu(MENU_DATA* data) {
             strcpy(filePath, cesta);
             strcat(filePath, data->nahravky[data->pocetNahravok]);
             char* fileName = data->nahravky[data->pocetNahravok];
-            odosli_subor("frios2.fri.uniza.sk", "10025", filePath, fileName);
+            odosli_subor("158.193.140.91", "10025", filePath, fileName);
             //158.193.140.91
             break;
         default:

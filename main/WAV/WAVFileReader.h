@@ -1,6 +1,9 @@
+/*
+    Prevzaté a upravené z: https://github.com/atomic14/esp32_sdcard_audio/tree/main/idf-wav-sdcard/lib/wav_file/src
+*/
+
 #ifndef _WAVFILEREADER_H
 #define _WAVFILEREADER_H
-
 
 #include <stdio.h>
 #include "WAVFile.h"

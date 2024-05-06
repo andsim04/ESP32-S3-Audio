@@ -1,9 +1,6 @@
 /*
- * IPK.2023L
- *
- * Demonstration of trivial TCP client.
- *
- */
+  Zdroj základnej časti kódu tohto súboru : https://git.fit.vutbr.cz/NESFIT/IPK-Projects-2024/src/branch/master/Stubs/cpp/DemoTcp/client.c
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,44 +56,29 @@ typedef enum
 
 Status GetAddrForDomain(Config *config, struct addrinfo **server_info);
 
-// Sending buffer size
 #define SEND_BUFSIZE 1024
-
-// Receive buffer size (<= 1) - does not really matter with TCP
-#define RECEIVE_BUFSIZE 1024
-
-
 
 int odosli_subor(char* hostName, char* port, char* filePath, char* fileName)
 {
-
     char send_buffer[SEND_BUFSIZE] = {0};
     Config config;
     config.server_hostname = hostName;
     config.port_string = port;
     config.path = filePath;
-    // Check and parse arguments
-   
 
-    // Resolve domain to IP address
     struct addrinfo *server_info;
     CHECK_ERROR(GetAddrForDomain(&config, &server_info));
 
-    // Create socket
     int client_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
     CHECK_PERROR(client_socket < 0, "Socket", server_info);
 
-    // Optionally set socket options with setsockopt
-
-    // Set receive timeout to 2 seconds
     struct timeval timeval = {
             .tv_sec = 2};
     CHECK_PERROR(setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, &timeval, sizeof(timeval)) < 0, "Setsockopt", server_info);
 
-    // Connect to the remote server
     CHECK_PERROR(connect(client_socket, server_info->ai_addr, server_info->ai_addrlen) < 0, "Connect", server_info);
 
-    // Get messages from stdin and send them to the server
+
     ESP_LOGE(TAG_TCP,"INFO: Connected to the server!\n");
     FILE *fp = fopen(config.path, "rb");
     int size;
@@ -117,27 +99,21 @@ int odosli_subor(char* hostName, char* port, char* filePath, char* fileName)
         
     }
     fclose(fp);
-    char receive_buffer[RECEIVE_BUFSIZE] = {0};
-
-     ESP_LOGE(TAG_TCP,"Terminating ...\n");
-
-    // Close the socket
+    ESP_LOGE(TAG_TCP,"Terminating ...\n");
     close(client_socket);
-
-    // Free addrInfo
     freeaddrinfo(server_info);
 
     return EXIT_SUCCESS;
 }
 
-// Get IPv4 address for domain and port in config
+
 Status GetAddrForDomain(Config *config, struct addrinfo **server_info)
 {
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;       // IPv4
-    hints.ai_socktype = SOCK_STREAM; // TCP
-    hints.ai_protocol = 0;           // Protocol
+    hints.ai_family = AF_INET;       
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = 0;          
 
     int status = getaddrinfo(config->server_hostname, config->port_string, &hints, server_info);
 

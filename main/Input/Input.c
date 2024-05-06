@@ -38,6 +38,10 @@ void start_in(i2s_chan_handle_t * handle)
     i2s_channel_enable(*handle);
 }
 
+/*
+    Metóda prevzatá a upravená z:  https://github.com/atomic14/esp32_sdcard_audio/blob/main/idf-wav-sdcard/lib/audio_input/src/I2SMEMSSampler.cpp
+*/
+
 int read_i2s(i2s_chan_handle_t * handle, int16_t* samples, int count) 
 {
     int32_t *raw_samples = (int32_t *)malloc(sizeof(int32_t) * count);
