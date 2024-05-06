@@ -208,7 +208,7 @@ void vypis_nahravok(MENU_DATA * data)
     for (int i = 0; i < sum_files + 1; i++)
     {
         ESP_LOGI(TAG, "%s", data->nahravky[i]);
-        ESP_LOGI(TAG, "%s", file_names[i]);
+        //ESP_LOGI(TAG, "%s", file_names[i]);
     }
 }
 
@@ -278,8 +278,19 @@ void potvrdenie_menu(MENU_DATA* data) {
             break;
         case 1:
             ESP_LOGE(TAG, "%s", filePath);
+            ssd1306_clear_line(data->oled, 2, false); //prerobit na metodu
+            ssd1306_clear_line(data->oled, 3, false);
+            ssd1306_display_text(data->oled, 2, "Nahravam", 10, false);
             record(data->handle_in, data->writer, filePath); 
+            ssd1306_clear_line(data->oled, 2, false);
+            ssd1306_clear_line(data->oled, 3, false);
+            ssd1306_display_text(data->oled, 2, "Nahrate", 8, false);
+            vTaskDelay(1000);
             data->pocetNahravok += 1;
+            data->index_menu -= 1;
+            data->zvolene -= 1;
+            posun_menu(data); 
+
             break;
         case 2:
             char* cesta = "/sdcard/nahravky/";
@@ -287,7 +298,17 @@ void potvrdenie_menu(MENU_DATA* data) {
             strcpy(filePath, cesta);
             strcat(filePath, data->nahravky[data->pocetNahravok]);
             char* fileName = data->nahravky[data->pocetNahravok];
+            ssd1306_clear_line(data->oled, 2, false);
+            ssd1306_clear_line(data->oled, 3, false);
+            ssd1306_display_text(data->oled, 2, "Odosielam", 10, false);
             odosli_subor("158.193.140.91", "10025", filePath, fileName);
+            ssd1306_clear_line(data->oled, 2, false);
+            ssd1306_clear_line(data->oled, 3, false);
+            ssd1306_display_text(data->oled, 2, "Odoslane", 10, false);
+            vTaskDelay(1000);
+            data->index_menu -= 1;
+            data->zvolene -= 1;
+            posun_menu(data); 
             //158.193.140.91
             break;
         default:
@@ -308,7 +329,14 @@ void potvrdenie_menu(MENU_DATA* data) {
             char filePath[50];
             strcpy(filePath, cesta);
             strcat(filePath, data->nahravky[data->zvolene]);
+            ssd1306_clear_line(data->oled, 2, false);
+            ssd1306_clear_line(data->oled, 3, false);
+            ssd1306_display_text(data->oled, 2, "Prehravam", 10, false);
+            ssd1306_display_text(data->oled, 3, data->nahravky[data->zvolene], strlen(data->nahravky[data->zvolene]), false);
             play(data->handle_ou, data->card, data->reader, filePath);
+            data->index_menu -= 1;
+            data->zvolene -= 1;
+            posun_menu(data); 
         
         }
     }
