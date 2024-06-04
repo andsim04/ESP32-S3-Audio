@@ -85,7 +85,7 @@ int odosli_subor(char* hostName, char* port, char* filePath, char* fileName)
     fseek(fp, 0L, SEEK_END);
     size = ftell(fp);
     rewind(fp);
-    printf("%d\n", size);
+    //printf("%d\n", size);
     send(client_socket, &size, sizeof(int) , 0);
     int celkovo = 0;
     while (!feof(fp))
@@ -99,7 +99,7 @@ int odosli_subor(char* hostName, char* port, char* filePath, char* fileName)
         
     }
     fclose(fp);
-    ESP_LOGE(TAG_TCP,"Terminating ...\n");
+    ESP_LOGE(TAG_TCP,"Súbor bol úspešne prenesený!\n");
     close(client_socket);
     freeaddrinfo(server_info);
 

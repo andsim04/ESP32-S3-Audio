@@ -284,8 +284,12 @@ void potvrdenie_menu(MENU_DATA* data) {
             record(data->handle_in, data->writer, filePath); 
             ssd1306_clear_line(data->oled, 2, false);
             ssd1306_clear_line(data->oled, 3, false);
-            ssd1306_display_text(data->oled, 2, "Nahrate", 8, false);
-            vTaskDelay(1000);
+            ssd1306_display_text(data->oled, 2, "Nahrane", 8, false);
+            char nazov[10] = "test";
+            strcat(nazov, intString);
+            strcat(nazov, ".wav");
+            ssd1306_display_text(data->oled, 3, nazov, 10, false);
+            vTaskDelay(200);
             data->pocetNahravok += 1;
             data->index_menu -= 1;
             data->zvolene -= 1;
@@ -293,22 +297,22 @@ void potvrdenie_menu(MENU_DATA* data) {
 
             break;
         case 2:
-            char* cesta = "/sdcard/nahravky/";
-            char filePath[50];
-            strcpy(filePath, cesta);
-            strcat(filePath, data->nahravky[data->pocetNahravok]);
-            char* fileName = data->nahravky[data->pocetNahravok];
-            ssd1306_clear_line(data->oled, 2, false);
-            ssd1306_clear_line(data->oled, 3, false);
-            ssd1306_display_text(data->oled, 2, "Odosielam", 10, false);
-            odosli_subor("158.193.140.91", "10025", filePath, fileName);
-            ssd1306_clear_line(data->oled, 2, false);
-            ssd1306_clear_line(data->oled, 3, false);
-            ssd1306_display_text(data->oled, 2, "Odoslane", 10, false);
-            vTaskDelay(1000);
-            data->index_menu -= 1;
-            data->zvolene -= 1;
-            posun_menu(data); 
+            // char* cesta = "/sdcard/nahravky/";
+            // char filePath[50];
+            // strcpy(filePath, cesta);
+            // strcat(filePath, data->nahravky[data->pocetNahravok]);
+            // char* fileName = data->nahravky[data->pocetNahravok];
+            // ssd1306_clear_line(data->oled, 2, false);
+            // ssd1306_clear_line(data->oled, 3, false);
+            // ssd1306_display_text(data->oled, 2, "Odosielam", 10, false);
+            // odosli_subor("158.193.140.91", "10025", filePath, fileName);
+            // ssd1306_clear_line(data->oled, 2, false);
+            // ssd1306_clear_line(data->oled, 3, false);
+            // ssd1306_display_text(data->oled, 2, "Odoslane", 10, false);
+            // vTaskDelay(1000);
+            // data->index_menu -= 1;
+            // data->zvolene -= 1;
+            // posun_menu(data); 
             //158.193.140.91
             break;
         default:
@@ -395,14 +399,14 @@ void app_main(void)
     gpio_set_direction(USR_BTN_2, GPIO_MODE_DEF_INPUT);
    
 
-    esp_err_t ret = nvs_flash_init();
-            if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-                ESP_ERROR_CHECK(nvs_flash_erase());
-                ret = nvs_flash_init();
-            }
-            ESP_ERROR_CHECK(ret);
-            ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
-            wifi_init_sta();
+    // esp_err_t ret = nvs_flash_init();
+    //         if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    //             ESP_ERROR_CHECK(nvs_flash_erase());
+    //             ret = nvs_flash_init();
+    //         }
+    //         ESP_ERROR_CHECK(ret);
+    //         ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
+    //         wifi_init_sta();
 
     WAVFILEWRITER writer;
     writer.m_header = header;
